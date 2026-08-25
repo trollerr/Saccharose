@@ -508,7 +508,7 @@ export async function orderChapterQuests(ctrl: GenshinControl, chapter: ChapterE
     return [];
   }
   const globalVarIds: number[] = await ctrl.cached('QuestGlobalVarConfigData', 'json', async () => {
-    const globalVar: any[] = await ctrl.readDataFile('./ExcelBinOutput/QuestGlobalVarConfigData.json');
+    const globalVar: any[] = await ctrl.readExcelDataFile('./QuestGlobalVarConfigData.json');
     return globalVar.map(x => x.Id);
   });
 

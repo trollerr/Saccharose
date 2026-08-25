@@ -7,6 +7,16 @@ export function isNumberEmpty(n: number): boolean {
     return !n && n !== 0;
 }
 
+/**
+ * Returns true if the value is numeric (number or string that can be converted to a number), otherwise returns false.
+ *
+ * Considered numeric if already a number or matching the regex for a number (including optional sign and decimal point).
+ *
+ * This does not consider scientific notation (e.g., "1e10") as numeric.
+ *
+ * @param value The value to check.
+ * @returns True if the value is numeric, otherwise false.
+ */
 export function isNumeric(value: any): boolean {
   if (typeof value === 'number') {
     return true;
@@ -17,6 +27,12 @@ export function isNumeric(value: any): boolean {
   }
 }
 
+/**
+ * Returns true if the value is an integer (number or string that can be converted to an integer), otherwise returns false.
+ *
+ * @param value The value to check.
+ * @returns True if the value is an integer, otherwise false.
+ */
 export function isInt(value: any): boolean {
   if (isNaN(value)) {
     return false;
@@ -33,6 +49,18 @@ export function isInt(value: any): boolean {
   }
 }
 
+/**
+ * Converts a string or number to a number.
+ *
+ * If the input is a string with a decimal point, it will be converted to a float.
+ *
+ * If it is an integer string, it will be converted to an integer.
+ *
+ * If the input is already a number, it will be returned as-is.
+ *
+ * @param x The string or number to convert.
+ * @returns The converted number.
+ */
 export function toNumber(x: string | number) {
     if (typeof x === 'number') {
         return x;
@@ -43,6 +71,14 @@ export function toNumber(x: string | number) {
     }
 }
 
+/**
+ * Returns true if the value is a safe integer (number or string that can be converted to a safe integer), otherwise returns false.
+ *
+ * A safe integer is one that isn't `NaN` and within the max and min safe integer range in JavaScript.
+ *
+ * @param x The value to check.
+ * @returns True if the value is a safe integer, otherwise false.
+ */
 export function isSafeInt(x: any): boolean {
   if (!isInt(x)) {
     return false;
@@ -54,6 +90,17 @@ export function isSafeInt(x: any): boolean {
   return !isNaN(num) && Number.isSafeInteger(num);
 }
 
+/**
+ * Converts a string or number to an integer.
+ *
+ * If the input is already an integer, it will be returned as-is.
+ *
+ * If the input contains a decimal point, it will be truncated to an integer.
+ *
+ * @param x The string or number to convert.
+ * @param defaultIfNaN The value to return if the input cannot be converted to an integer. If not provided, `NaN` will be returned.
+ * @returns The converted integer, or `defaultIfNaN` if the input cannot be converted.
+ */
 export function toInt(x: any, defaultIfNaN?: number): number {
   if (isUnset(x)) {
     return isset(defaultIfNaN) ? defaultIfNaN : NaN;
@@ -78,11 +125,22 @@ export function toInt(x: any, defaultIfNaN?: number): number {
 /**
  * If the parameter passed into this function is in the form of an integer, then it'll be returned as an integer,
  * otherwise the original parameter will be returned.
+ *
+ * @param x The value to check and possibly convert to an integer.
+ * @returns The integer value if the input is a safe integer, otherwise the original input.
  */
 export function maybeInt(x: any): any {
   return isSafeInt(x) ? toInt(x) : x;
 }
 
+/**
+ * Constrains a number to be within a specified range.
+ *
+ * @param n The number to constrain.
+ * @param min The minimum value the number can be.
+ * @param max The maximum value the number can be.
+ * @returns The constrained number, which will be the original number if it is within the range, or the min/max if it is outside the range.
+ */
 export function constrainNumber(n: number, min: number, max: number) {
   if (n < min) {
     return min;

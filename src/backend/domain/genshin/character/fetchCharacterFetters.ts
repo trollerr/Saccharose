@@ -73,7 +73,7 @@ export async function fetchCharacterFetters(ctrl: GenshinControl, skipCache: boo
   const avatarMap: {[avatarId: number]: AvatarExcelConfigData} = mapBy(await ctrl.selectAllAvatars(), 'Id');
 
   return ctrl.cached('Fetters:FetterGroup', 'json', async () => {
-    let fetters: FetterExcelConfigData[] = await ctrl.readDataFile('./ExcelBinOutput/FettersExcelConfigData.json');
+    let fetters: FetterExcelConfigData[] = await ctrl.readExcelDataFile('./FettersExcelConfigData.json');
     let fettersByAvatar: FetterGroupByAvatar = defaultMap((avatarId: number) => <FetterGroup> {
       avatarId,
       avatarName: null,

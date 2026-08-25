@@ -13,7 +13,7 @@ const sep: string = '</p><!--\n              --><p>';
 
 async function fetchAllFetterStoryExcelConfigData(ctrl: GenshinControl): Promise<FetterStoryExcelConfigData[]> {
   return await ctrl.cached('Fetters:FetterStoryExcelConfigData:'+ctrl.outputLangCode, 'json', async () => {
-    let records: FetterStoryExcelConfigData[] = await ctrl.readDataFile('./ExcelBinOutput/FetterStoryExcelConfigData.json');
+    let records: FetterStoryExcelConfigData[] = await ctrl.readExcelDataFile('./FetterStoryExcelConfigData.json');
     for (let fetter of records) {
       await processFetterConds(ctrl, fetter, 'OpenConds');
       await processFetterConds(ctrl, fetter, 'FinishConds');

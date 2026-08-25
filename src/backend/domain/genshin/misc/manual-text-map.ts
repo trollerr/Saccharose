@@ -5,16 +5,10 @@ import { createLangCodeMapOfSameValue, LangCode, LangCodeMap } from '../../../..
 import { isInt } from '../../../../shared/util/numberUtil.ts';
 import { isString } from '../../../../shared/util/stringUtil.ts';
 import { GCGTagElementType, GCGTagWeaponType } from '../../../../shared/types/genshin/gcg-types.ts';
-import {
-  WeaponExcelConfigData,
-  WeaponLoadConf,
-  WeaponType,
-  WeaponTypeEN,
-} from '../../../../shared/types/genshin/weapon-types.ts';
+import { WeaponType, WeaponTypeEN } from '../../../../shared/types/genshin/weapon-types.ts';
 
 export class GenshinManualTextMap {
-  constructor(readonly ctrl: GenshinControl) {
-  }
+  constructor(readonly ctrl: GenshinControl) {}
 
   isKey(key: string): key is CustomTextMapKey {
     return key in ManualTextMapCustomKeys;
@@ -61,6 +55,15 @@ export class GenshinManualTextMap {
       .whereIn('TextMapId', ids)
       .then(this.ctrl.commonLoad);
     return mapBy(result, 'TextMapId');
+  }
+
+  async selectMultiRecordWithTextContentResult(ids: string[]): Promise<Record<string, string>> {
+    const data = await this.selectMultiRecord(ids);
+    const result: Record<string, string> = {};
+    for (const key of Object.keys(data)) {
+      result[key] = data[key].TextMapContentText;
+    }
+    return result;
   }
 
   async selectRecordsByIdStartsWith(idStartsWith: string, mode: 'like'|'ilike' = 'ilike'): Promise<Record<string, ManualTextMapConfigData>> {

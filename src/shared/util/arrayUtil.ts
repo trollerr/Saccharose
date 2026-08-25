@@ -1,6 +1,6 @@
 // noinspection JSUnusedGlobalSymbols
 
-import { isEmpty, isNotEmpty, isObject, isPromise, isset, isUnset } from './genericUtil.ts';
+import { isAtomic, isEmpty, isNotEmpty, isObject, isPromise, isset, isUnset } from './genericUtil.ts';
 import { isStringBlank, trim } from './stringUtil.ts';
 import { isInt } from './numberUtil.ts';
 import { ArrayElement, KeysMatching, NonArray } from '../types/utility-types.ts';
@@ -20,10 +20,26 @@ export function entriesOf<T>(obj: {[key: string|number|symbol]: T}): [string, T]
   return !obj ? [] : Object.entries(obj);
 }
 
+/**
+ * Ensures that the given object is returned as an array.
+ * If the object is already an array, it is returned as-is. If the object is not an array, it is wrapped in a new array.
+ *
+ * @template T The type of the object or array elements.
+ * @param obj The object to be converted to an array.
+ * @returns An array containing the object, or the object itself if it is already an array.
+ */
 export function toArray<T>(obj: T|T[]): T[] {
     return Array.isArray(obj) ? obj : [obj];
 }
 
+/**
+ * Checks if the given object is iterable, meaning it has a `Symbol.iterator` method.
+ *
+ * This function returns `true` for arrays, strings, Maps, Sets, and any other object that implements the iterable protocol.
+ *
+ * @param obj The object to check for iterability.
+ * @returns `true` if the object is iterable, `false` otherwise.
+ */
 export function isIterable(obj: any): obj is IterableIterator<any> {
     if (!obj) {
         return false;
@@ -31,6 +47,14 @@ export function isIterable(obj: any): obj is IterableIterator<any> {
     return typeof obj[Symbol.iterator] === 'function';
 }
 
+/**
+ * Checks if the given object is array-like, meaning it has a `length` property and can be indexed like an array.
+ *
+ * This function returns `true` for actual arrays, as well as for objects that have a numeric `length` property and can be accessed using indices (e.g., `obj[0]`, `obj[1]`, etc.).
+ *
+ * @param obj The object to check for array-like behavior.
+ * @returns `true` if the object is array-like, `false` otherwise.
+ */
 export function isArrayLike(obj: any): boolean {
   return (
     Array.isArray(obj) ||
@@ -45,6 +69,17 @@ export function isArrayLike(obj: any): boolean {
   );
 }
 
+/**
+ * Filters an array in-place, removing elements that do not satisfy the provided condition.
+ * @param a The array to be filtered in-place.
+ * @param condition A function that takes an element, its index, and the array itself, and returns a boolean indicating whether the element should be kept (true) or removed (false).
+ * @param thisArg An optional value to use as `this` when executing the condition function.
+ * @returns The filtered array, which is the same reference as the input array `a`.
+ *
+ * @example
+ *   let myArr = [1, 2, 3, 4, 5];
+ *   filterInPlace(myArr, (item) => item % 2 === 0); // myArr is now [2, 4]
+ */
 export function filterInPlace<T>(a: T[], condition: (item: T, i?: number, a?: T[]) => boolean, thisArg: any = null): T[] {
     let j = 0;
 
@@ -74,18 +109,49 @@ export function fromKeysWithFixedValue<T>(keys: string[], value: T): { [key: str
     return obj;
 }
 
+/**
+ * Represents a field in an object, including its path, basename, value, and whether it's a leaf node (i.e., not an object or array).
+ */
 export type PathAndValue = {
+  /**
+   * The full path to the field in the object, represented as a string in dot notation.
+   * Each segment of the path is separated by a dot (.) for object properties and square brackets ([]) for array indices.
+   *
+   * For example, `myObj.myArray[0].myProperty`
+   */
   path: string,
+
+  /**
+   * The basename of the field, which is the last segment of the path. For example, if the path is "a.b.c", the basename would be "c".
+   *
+   * For array elements, this would be the index integer in string form without brackets. Guaranteed to be parseable
+   * as an integer if {@link isArrayElement} is true.
+   */
   basename: string,
+
+  /**
+   * The value of the field. This can be any type, including objects, arrays, or primitive values.
+   */
   value: any,
+
+  /**
+   * Indicates whether the value is an element of an array. This is true if the field is part of an array, and false otherwise.
+   */
+  isArrayElement: boolean,
+
+  /**
+   * If the value is a "leaf" node. This is true when {@link isAtomic} returns true for the value.
+   */
   isLeaf: boolean
 };
 
 /**
  * Checks if two objects are equivalent.
- * @param a
- * @param b
+ *
+ * @param a The first object to compare.
+ * @param b The second object to compare.
  * @param fieldSkipper If this function returns true, then field passed in will be ignored from the equivalence check
+ * @returns True if the objects are equivalent, false otherwise.
  */
 export function isEquiv(a: any, b: any, fieldSkipper?: (field: PathAndValue) => boolean): boolean {
   if (a === b) {
@@ -127,6 +193,11 @@ export function isEquiv(a: any, b: any, fieldSkipper?: (field: PathAndValue) => 
   }
 }
 
+/**
+ * A callback function that is called for every field in an object when using {@link walkObjectGen} or {@link walkObject}.
+ *
+ * See the `interceptor` parameter on {@link walkObjectGen} for more details.
+ */
 export type WalkObjectProcessor = (curr: PathAndValue) => 'NO-DESCEND'|'QUIT'|'CONTINUE'|'DELETE'|void;
 
 /**
@@ -137,6 +208,7 @@ export type WalkObjectProcessor = (curr: PathAndValue) => 'NO-DESCEND'|'QUIT'|'C
 export function walkObject(o: any, processor: WalkObjectProcessor): void {
   for (let _ignore of walkObjectGen(o, false, processor)) {}
 }
+
 
 /**
  * A generator that walks through all the fields of any object (including within nested objects and arrays).
@@ -179,7 +251,8 @@ export function* walkObjectGen(o: any, leafsOnly: boolean = false, interceptor?:
         path: entry[0],
         basename: entry[0],
         value: entry[1],
-        isLeaf: !entry[1] || typeof entry[1] !== 'object'
+        isLeaf: isAtomic(entry[1]),
+        isArrayElement: false
       });
     }
   }
@@ -211,7 +284,8 @@ export function* walkObjectGen(o: any, leafsOnly: boolean = false, interceptor?:
             path: curr.path + '[' + i + ']',
             basename: String(i),
             value: curr.value[i],
-            isLeaf: !curr.value[i] || typeof curr.value[i] !== 'object'
+            isLeaf: isAtomic(curr.value[i]),
+            isArrayElement: true
           });
         }
       } else {
@@ -221,7 +295,8 @@ export function* walkObjectGen(o: any, leafsOnly: boolean = false, interceptor?:
               path: curr.path + '.' + entry[0],
               basename: entry[0],
               value: entry[1],
-              isLeaf: !entry[1] || typeof entry[1] !== 'object'
+              isLeaf: isAtomic(entry[1]),
+              isArrayElement: false
             });
           }
         }
@@ -290,10 +365,18 @@ export function resolveObjectPath(o: any, s: string, mode: 'get' | 'set' | 'dele
   return o;
 }
 
+/**
+ * A utility class for working with arrays in a promise-based, chainable manner.
+ */
 export class ArrayStream<T> {
   private arr: T[] = [];
   private promiseChain: Promise<any> = Promise.resolve();
 
+  /**
+   * Creates a new ArrayStream instance.
+   *
+   * @param arr The array or a promise that resolves to an array to be wrapped in the ArrayStream.
+   */
   constructor(arr: T[]|Promise<T[]>) {
     if (isPromise(arr)) {
       this.chain(async () => {
@@ -308,6 +391,11 @@ export class ArrayStream<T> {
     this.promiseChain = this.promiseChain.then(fn);
   }
 
+  /**
+   * Filters the array in the stream based on the provided function or predefined conditions.
+   *
+   * @param fn A function that takes an element of the array and returns a boolean indicating whether the element should be retained (true) or removed (false).
+   */
   retain(fn: 'isset' | 'nonEmpty' | ((v: T) => boolean) = 'nonEmpty'): this {
     this.chain(() => {
       let cb: (v: T) => boolean;
@@ -384,6 +472,27 @@ export class ArrayStream<T> {
   }
 }
 
+/**
+ * Creates a map from an array of objects, where the keys are extracted from each object using the provided `keyProp`.
+ *
+ * @template T The type of the objects in the input array.
+ * @template K The type of the key property, which must be a string or number.
+ * @param array The input array of objects to be transformed into a map.
+ * @param keyProp The property name of the objects in the array that will be used as keys in the resulting map.
+ * This property must be of type string or number.
+ * @param out An optional object to which the key-value pairs will be added. If not provided, a new object will be created.
+ * @returns A map (Record<string, T>) where each key is derived from the `keyProp` of the objects in the input array,
+ * and each value is the corresponding object.
+ * @example
+ *   const users = [{id: 1, name: 'Alice'}, {id: 2, name: 'Bob'}];
+ *   const userMap = mapBy(users, 'id');
+ *
+ *   // userMap will be:
+ *   {
+ *     '1': {id: 1, name: 'Alice'},
+ *     '2': {id: 2, name: 'Bob'}
+ *   }
+ */
 export function mapBy<T, K extends KeysMatching<T, string | number>>(
   array: T[],
   keyProp: K,
@@ -397,6 +506,15 @@ export function mapBy<T, K extends KeysMatching<T, string | number>>(
   return out;
 }
 
+/**
+ * Creates a map from an array of objects, where the keys and values are extracted from each object using the provided `kvExtractor` function.
+ *
+ * @template T The type of the objects in the input array.
+ * @template V The type of the values in the resulting map.
+ * @param array The input array of objects to be transformed into a map.
+ * @param kvExtractor A function that takes an object of type T and returns a tuple containing the key (string) and value (V) for the resulting map.
+ * @returns A map (Record<string, V>) where each key-value pair is derived from the input array using the `kvExtractor` function.
+ */
 export function arrayToMap<T, V>(array: T[], kvExtractor: (item: T) => [string, V]): Record<string, V> {
   const out: Record<string, V> = {};
   for (let item of array) {
@@ -496,6 +614,11 @@ export function sort<T>(array: T[], ...fields: (string|SortComparator<T>)[]): T[
     return array;
 }
 
+/**
+ * Recursively removes empty values from an object or array. See {@link isEmpty} for what is considered empty.
+ *
+ * @param o The object or array to clean.
+ */
 export function cleanEmpty<T>(o: T): T {
     if (isEmpty(o)) {
         return o;
@@ -526,10 +649,23 @@ export function arrayUnique<T>(a: T[]): T[] {
     });
 }
 
+/**
+ * Checks if an array is empty or not defined.
+ * @param array The array to check.
+ * @returns `true` if the array is empty or not defined, `false` otherwise.
+ */
 export function arrayEmpty(array: any[]) {
     return !array || array.length === 0;
 }
 
+/**
+ * Finds the index of an object in an array using a custom comparator function.
+ * @param array The array to search in.
+ * @param obj The object to find the index of.
+ * @param comparator An optional comparator function that takes two arguments (an element from the array and the object
+ * to find) and returns a boolean indicating whether they are considered equal.
+ * @returns The index of the object in the array if found, or -1 if not found.
+ */
 export function arrayIndexOf<T>(array: T[], obj: T, comparator?: ElementComparator<T>): number {
     if (!comparator)
         return array.indexOf(obj);
@@ -541,10 +677,27 @@ export function arrayIndexOf<T>(array: T[], obj: T, comparator?: ElementComparat
     return -1;
 }
 
+/**
+ * Checks if an array contains a specific object using a custom comparator function.
+ *
+ * @param array The array to search in.
+ * @param obj The object to check for in the array.
+ * @param comparator An optional comparator function that takes two arguments (an element from the array and the object
+ * to find) and returns a boolean indicating whether they are considered equal.
+ * @returns `true` if the object is found in the array, `false` otherwise.
+ */
 export function arrayContains<T>(array: T[], obj: T, comparator?: ElementComparator<T>): boolean {
     return arrayIndexOf(array, obj, comparator) >= 0;
 }
 
+/**
+ * Finds the intersection of multiple arrays, returning an array of elements that are present in all input arrays.
+ *
+ * @param args An array of arrays to find the intersection of.
+ * @param comparator An optional comparator function that takes two arguments (an element from the arrays and the object
+ * to find) and returns a boolean indicating whether they are considered equal.
+ * @returns An array containing the elements that are present in all input arrays.
+ */
 export function arrayIntersect<T>(args: T[][], comparator?: ElementComparator<T>): T[] {
     let result = [];
     let lists: T[][] = args;
@@ -563,17 +716,59 @@ export function arrayIntersect<T>(args: T[][], comparator?: ElementComparator<T>
     return result;
 }
 
+/**
+ * Calculates the sum of all numbers in an array.
+ *
+ * @param array An array of numbers to sum.
+ * @returns The sum of the numbers in the array.
+ */
 export function arraySum(array: number[]): number {
     return array.reduce((a: number, b: number) => a + b, 0);
 }
 
+/**
+ * Pairs elements from two arrays into an array of tuples.
+ *
+ * If the arrays are of unequal length, the resulting array will have the length of the longer array,
+ * with `undefined` filling in for missing elements from the shorter array.
+ *
+ * @template T The type of elements in the first array.
+ * @template U The type of elements in the second array.
+ * @param arr1 The first array to pair.
+ * @param arr2 The second array to pair.
+ * @returns An array of tuples, where each tuple contains one element from `arr1` and one element from `arr2`.
+ */
 export function pairArrays<T, U>(arr1: T[], arr2: U[]): [T, U][] {
-  return !arr1 || !Array.isArray(arr1) ? [] : arr1.map((item: T, idx: number) => [item, arr2?.[idx]]);
+  arr1 = !arr1 || !Array.isArray(arr1) ? [] : arr1;
+  arr2 = !arr2 || !Array.isArray(arr2) ? [] : arr2;
+
+  if (arr1.length >= arr2.length) {
+    return arr1.map((item: T, idx: number) => [item, arr2?.[idx]]);
+  } else {
+    return arr2.map((item: U, idx: number) => [arr1?.[idx], item]);
+  }
 }
 
 declare global {
   interface Array<T> {
+    /**
+     * Asynchronously maps over the array, applying the provided callback function to each element and returning a promise that resolves to an array of results.
+     *
+     * @param callbackfn A function that takes an element of the array, its index, and the array itself, and returns a promise that resolves to a value or void.
+     * @param skipNilResults If true, any results that are `null` or `undefined` will be skipped in the final result array. Defaults to true.
+     * @returns A promise that resolves to an array of results from the callback function, with `null` or `undefined` values optionally skipped.
+     */
     asyncMap<U>(callbackfn: (value: T, index: number, array: T[]) => Promise<U|void>, skipNilResults?: boolean): Promise<U[]>;
+
+    /**
+     * Asynchronously iterates over the array, applying the provided callback function to each element.
+     *
+     * The iteration is done in parallel, and the method returns a promise that resolves when all iterations are complete.
+     *
+     * @param callbackfn A function that takes an element of the array, its index, and the array itself, and returns a promise that resolves to void.
+     * @param skipNilResults If true, any results that are `null` or `undefined` will be skipped in the final result array. Defaults to true.
+     * @returns A promise that resolves when all iterations are complete.
+     */
     asyncForEach(callbackfn: (value: T, index: number, array: T[]) => Promise<void>, skipNilResults?: boolean): Promise<void>;
   }
 }
@@ -611,19 +806,35 @@ Object.defineProperty(Array.prototype, 'asyncForEach', {
   }
 });
 
+/**
+ * Moves an element in an array from one index to another, modifying the original array in place.
+ * @param arr The array in which the element will be moved.
+ * @param fromIndex The index of the element to move.
+ * @param toIndex The index to which the element should be moved.
+ */
 function arrayMove<T>(arr: T[], fromIndex: number, toIndex: number) {
   let element = arr[fromIndex];
   arr.splice(fromIndex, 1);
   arr.splice(toIndex, 0, element);
 }
 
-// Returns the number in 'arr' that is closest to 'target'
+/**
+ * Finds the number in an array that is closest to a specified target number.
+ * @param arr An array of numbers to search through.
+ * @param target The target number to find the closest match for.
+ * @returns The number from the array that is closest to the target number.
+ */
 export function arrayClosestNumber(arr: number[], target: number) {
   return arr.reduce((prev: number, curr: number) => {
     return (Math.abs(curr - target) < Math.abs(prev - target) ? curr : prev);
   });
 }
 
+/**
+ * Removes specified items from an array, modifying the original array in place.
+ * @param arr The array from which items will be removed.
+ * @param items An array of items to be removed from the original array.
+ */
 export function arrayRemove<T>(arr: T[], items: T[]) {
   for (let item of items) {
     let index = arr.indexOf(item);
@@ -633,6 +844,12 @@ export function arrayRemove<T>(arr: T[], items: T[]) {
   }
 }
 
+/**
+ * Creates an array filled with a range of numbers from `start` to `end`, inclusive.
+ * @param start The starting number of the range.
+ * @param end The ending number of the range.
+ * @returns An array containing the numbers from `start` to `end` inclusively.
+ */
 export function arrayFillRange(start: number, end: number): number[] {
   let arr: number[] = [];
   for (let i = start; i <= end; i++) {
@@ -641,8 +858,18 @@ export function arrayFillRange(start: number, end: number): number[] {
   return arr;
 }
 
+/**
+ * Simple object representing an arbitrary indexed range with a `start` and `end` property, both of which are numbers.
+ */
 export type IndexedRange = {start: number, end: number};
 
+/**
+ * Calculates the length of a given range defined by an object with `start` and `end` properties.
+ *
+ * @param range An object representing the range, with `start` and `end` properties.
+ * @returns The length of the range, calculated as `end - start`. If the range is invalid (i.e., `end` is less than `start`), it returns 0.
+ * @param range
+ */
 export function rangeLen(range: IndexedRange): number {
   if (!range || range.end < range.start) {
     return 0;
@@ -650,6 +877,15 @@ export function rangeLen(range: IndexedRange): number {
   return range.end - range.start;
 }
 
+/**
+ * Calculates the intersection of two indexed ranges, returning a new range that represents the overlapping portion of the two ranges.
+ *
+ * If the two ranges do not overlap, the function returns `null`.
+ *
+ * @param a The first indexed range, with `start` and `end` properties.
+ * @param b The second indexed range, with `start` and `end` properties.
+ * @returns A new indexed range representing the intersection of the two input ranges, or `null` if there is no overlap.
+ */
 export function intersectRange(a: IndexedRange, b: IndexedRange): IndexedRange {
   const doOverlap = b.start < a.start
     ? b.end > a.start
@@ -668,6 +904,12 @@ export function intersectRange(a: IndexedRange, b: IndexedRange): IndexedRange {
   };
 }
 
+/**
+ * Checks if a number is within a specified indexed range, inclusive of the start and end values.
+ * @param n The number to check.
+ * @param r The indexed range, defined by an object with `start` and `end` properties.
+ * @returns `true` if the number is within the range (inclusive), `false` otherwise.
+ */
 export function inRange(n: number, r: IndexedRange): boolean {
   return n >= r.start
     && n <= r.end;

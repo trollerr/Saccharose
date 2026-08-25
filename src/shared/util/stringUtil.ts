@@ -10,7 +10,6 @@ export function isStringArray(x: any): x is string[] {
   return Array.isArray(x) && x.every(s => isString(s));
 }
 
-
 export function toString(x) {
   if (typeof x === 'undefined' || x === null || typeof x === 'string') {
     return x;
@@ -97,6 +96,11 @@ const entityMap = {
   '=': '&#x3D;',
 };
 
+/**
+ * Escapes HTML special characters in a string to prevent XSS attacks.
+ * @param html The string to escape.
+ * @returns The escaped string with HTML entities.
+ */
 export function escapeHtml(html: any) {
   return String(html).replace(/[&<>"'`=\/]/g, s => entityMap[s]);
 }
@@ -135,6 +139,12 @@ export const REGEX_ISO_8601 = /(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:[+-]\
 export const PM2_TIME_PREFIX = /(?:\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:[+-]\d\d:\d\d|Z)?:\s*)?/;
 export const REGEX_ISO_8601_EXACT = new RegExp('^' + REGEX_ISO_8601.source + '$');
 
+/**
+ * Concatenates multiple RegExp objects into a single RegExp.
+ * @param regs An array of RegExp objects to concatenate.
+ * @param flags Optional flags for the resulting RegExp.
+ * @returns A new RegExp that matches the concatenation of the input RegExps.
+ */
 export function concatRegExp(regs: RegExp[], flags?: string) {
   return new RegExp(regs.map(reg => reg.source).join(''), flags);
 }
@@ -258,10 +268,20 @@ export function splitArgs(input: string, sep?: string | RegExp, onlyDoubleQuotes
   return ret;
 }
 
+/**
+ * Splits a string into an array of lines, handling various newline characters including CR, LF, CRLF, and Unicode line separators.
+ * @param str The string to split into lines.
+ * @returns An array of lines.
+ */
 export function splitLines(str: string): string[] {
   return str.split(/\r?\n|[\n\v\f\r\x85\u2028\u2029]/g);
 }
 
+/**
+ * Counts the number of whitespace characters at the beginning of a string.
+ * @param str The string to count leading whitespace in.
+ * @returns The number of leading whitespace characters.
+ */
 export function countPrecedingWhitespace(str: string): number {
   let match = str.match(/^\s+/);
   let len = 0;
@@ -347,6 +367,9 @@ export function removeSuffix(str: string, suffix: string): string {
   return replaceSuffix(str, suffix);
 }
 
+/**
+ * List of whitespace characters, including non-breaking spaces and other Unicode whitespace characters.
+ */
 export const whitespace = [
   ' ',
   '\n',
@@ -372,6 +395,9 @@ export const whitespace = [
   '\u3000',
 ];
 
+/**
+ * A string containing all whitespace characters combined, for use in trimming functions.
+ */
 export const whitespaceCombined = whitespace.join('');
 
 /**
@@ -453,6 +479,11 @@ export async function replaceAsync(str: string, regex: RegExp, asyncFn: Function
   return str.replace(regex, () => data.shift());
 }
 
+/**
+ * Checks if a string is a valid Roman numeral.
+ * @param str The string to check.
+ * @returns True if the string is a valid Roman numeral, otherwise false.
+ */
 export function isValidRomanNumeral(str: string): boolean {
   return /^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/.test(str);
 }
@@ -476,6 +507,11 @@ export function replaceRomanNumerals(str: string, replacer: (roman: string) => s
   return split.join(' ');
 }
 
+/**
+ * Converts an integer to a Roman numeral string.
+ * @param num The integer to convert.
+ * @returns The Roman numeral representation of the integer, or NaN if the input is not a number.
+ */
 export function romanize(num: number) {
   if (isNaN(num))
     return NaN;
@@ -490,6 +526,11 @@ export function romanize(num: number) {
   return Array(+digits.join('') + 1).join('M') + roman;
 }
 
+/**
+ * Converts a Roman numeral string to an integer.
+ * @param s The Roman numeral string to convert.
+ * @returns The integer value of the Roman numeral, or -1 if the input is invalid.
+ */
 export function romanToInt(s: string) {
   if (!s) {
     return -1;
@@ -535,6 +576,9 @@ export function splitLimit(s: string, del: string, numParts: number): string[] {
   return parts;
 }
 
+/**
+ * A utility class representing a StringBuilder (Sb) for building strings with various wikitext-related formatting options.
+ */
 export class SbOut {
   private out = '';
   private propPadLen: number = 0;
@@ -639,11 +683,22 @@ export class SbOut {
   }
 }
 
+/**
+ * Splits the text into segments (words) based on the specified language code.
+ * @param langCode The language code to use for segmentation.
+ * @param text The text to segment.
+ * @returns An array of segments, each represented as an Intl.SegmentData object.
+ */
 export const wordSplit = (langCode: LangCode, text: string): Intl.SegmentData[] => {
   const segmenter = new Intl.Segmenter(LANG_CODE_TO_LOCALE[langCode], { granularity: 'word' });
   return Array.from(segmenter.segment(text));
 };
 
+/**
+ * Rejoins the segments (words) into a single string.
+ * @param segments The segments to rejoin.
+ * @returns The rejoined string.
+ */
 export const wordRejoin = (segments: Intl.SegmentData[]): string => {
   return segments.map(s => s.segment).join('');
 };
@@ -841,6 +896,14 @@ export function reformatPrimitiveArrays(jsonStr: string): string {
 
 const htmlIdCache = new Map<string, string>();
 
+/**
+ * Converts any string into a valid HTML ID by sanitizing it and appending a hash to ensure uniqueness.
+ *
+ * Guaranteed to not collide with other different strings, even if they sanitize to the same base string.
+ *
+ * @param input The input string to convert.
+ * @returns A valid HTML ID string.
+ */
 export function toHtmlId(input: string): string {
   // Return from cache if already computed
   const cached = htmlIdCache.get(input);

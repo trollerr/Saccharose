@@ -19,7 +19,13 @@ export abstract class MwParseModule {
    * As the parse iterator advances through each index in the input string, it'll iterate through every module
    * in the current parse context and call this `offer` method with the character at the current parse index.
    *
-   * @param ch The current character. Can also be accessed through `this.ctx.i` or `this.ctx.iter.i`
+   * @param ch The current character. Can also be accessed through `this.ctx.ch` or `this.ctx.iter.ch`
+   *
+   * The index of the current character can be accessed through `this.ctx.i` or `this.ctx.iter.i`
+   *
+   * The ctx (context) should be used for advanced awareness of the current parse state, for example, you can use
+   * `this.ctx.iter.charAt(this.ctx.i - 1)` to get the previous character, or `this.ctx.iter.peek(5)` to get the next 5 characters.
+   *
    * @returns The parse module will return `true` if it accepted the offer, meaning it will not call the `offer` method
    * on any of the remaining modules for the current parse index. If the parse module returns `false`, then it did not
    * accept the offer and the parser will continue to offer the character to the remaining modules until it finds one

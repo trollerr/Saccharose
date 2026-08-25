@@ -1,8 +1,6 @@
 // noinspection JSUnusedGlobalSymbols
-
 import {
   ConfigCondition, EquipAffixExcelConfigData, FeatureTagExcelConfigData, FeatureTagGroupExcelConfigData,
-
 } from '../../../shared/types/genshin/general-types.ts';
 import SrtParser, { SrtLine } from '../../util/srtParser.ts';
 import { promises as fsp } from 'fs';
@@ -22,7 +20,6 @@ import {
   extractRomanNumeral,
   replaceAsync,
   romanToInt,
-  rtrim,
   SbOut,
 } from '../../../shared/util/stringUtil.ts';
 import {
@@ -31,7 +28,7 @@ import {
   CodexQuestNarratageTypes,
   DialogExcelConfigData,
   DialogUnparented,
-  OptionIconMap,
+  OptionIconMap, ReminderExcelByVersionCount, ReminderExcelByVersionCounts,
   ReminderExcelConfigData,
   TalkExcelConfigData,
   TalkLoadType,
@@ -80,7 +77,7 @@ import {
 import {
   DATAFILE_GENSHIN_VOICE_ITEMS,
   getGenshinDataFilePath,
-  IMAGEDIR_GENSHIN_EXT, isSiteModeDisabled,
+  isSiteModeDisabled,
 } from '../../loadenv.ts';
 import {
   BookSuitExcelConfigData,
@@ -95,18 +92,12 @@ import {
 import {
   WeaponExcelConfigData,
   WeaponLoadConf,
-  WeaponType,
-  WeaponTypeEN,
 } from '../../../shared/types/genshin/weapon-types.ts';
 import { AvatarExcelConfigData, BuffExcelConfigData } from '../../../shared/types/genshin/avatar-types.ts';
 import {
   AnimalCodexExcelConfigData,
-  AnimalDescribeExcelConfigData,
-  LivingBeingArchive,
-  LivingBeingArchiveGroup,
   MonsterDescribeExcelConfigData,
   MonsterExcelConfigData,
-  MonsterLoadConf,
 } from '../../../shared/types/genshin/monster-types.ts';
 import { defaultMap, isEmpty, isset } from '../../../shared/util/genericUtil.ts';
 import { NewActivityExcelConfigData } from '../../../shared/types/genshin/activity-types.ts';
@@ -144,7 +135,6 @@ import * as console from 'console';
 import { CurrentGenshinVersion, GenshinVersions } from '../../../shared/types/game-versions.ts';
 import { AbstractControlState, ControlUserModeProvider } from '../abstract/abstractControlState.ts';
 import { Knex } from 'knex';
-import { fsExists } from '../../util/fsutil.ts';
 import { ReadableChangesCtrl } from './readables/genshinReadableChanges.ts';
 import { GenshinReadables } from './readables/genshinReadables.ts';
 import { getGCGControl } from './gcg/gcg_control.ts';
@@ -156,6 +146,7 @@ import {
   BydMaterialExcelConfigData, BydMaterialLoadConf,
 } from '../../../shared/types/genshin/beyond-types.ts';
 import { giImageHashToImageName } from './misc/giContainerHash.ts';
+import { GenshinLivingBeingModule } from './archive/livingBeingModule.ts';
 
 // region Control State
 // --------------------------------------------------------------------------------------------------------------
@@ -241,6 +232,7 @@ export class GenshinControl extends AbstractControl<GenshinControlState> {
   readonly readables: GenshinReadables = new GenshinReadables(this);
   readonly readableChanges: ReadableChangesCtrl = new ReadableChangesCtrl(this);
   readonly manualtm: GenshinManualTextMap = new GenshinManualTextMap(this);
+  readonly lb: GenshinLivingBeingModule = new GenshinLivingBeingModule(this);
 
   constructor(modeOrState?: ControlUserModeProvider|GenshinControlState) {
     super({
@@ -1939,261 +1931,6 @@ export class GenshinControl extends AbstractControl<GenshinControlState> {
   }
   // endregion
 
-  // region Monster
-  private async postProcessMonster(monster: MonsterExcelConfigData, loadConf?: MonsterLoadConf): Promise<MonsterExcelConfigData> {
-    if (!monster) {
-      return monster;
-    }
-    if (!loadConf) {
-      loadConf = {};
-    }
-    if (!this.state.DisableMonsterCache) {
-      this.state.monsterCache[monster.Id] = monster;
-    }
-    if (monster.DescribeId) {
-      monster.MonsterDescribe = await this.selectMonsterDescribe(monster.DescribeId);
-      monster.AnimalDescribe = await this.selectAnimalDescribe(monster.DescribeId);
-      monster.Describe = monster.MonsterDescribe || monster.AnimalDescribe;
-      monster.AnimalCodex = await this.selectAnimalCodexByDescribeId(monster.DescribeId);
-    }
-    if (loadConf.LoadHomeWorldAnimal) {
-      monster.HomeWorldAnimal = await this.selectHomeWorldAnimalByMonster(monster);
-    }
-    if (loadConf.LoadModelArtPath && !!monster?.AnimalCodex?.ModelPath) {
-      let modelPath = monster.AnimalCodex.ModelPath;
-
-      if (await fsExists(path.resolve(IMAGEDIR_GENSHIN_EXT, `./UI_${modelPath}.png`))) {
-        monster.AnimalCodex.ModelArtPath = 'UI_' + modelPath;
-      } else {
-        modelPath = rtrim(monster.AnimalCodex.ModelPath, '_0123456789');
-        if (await fsExists(path.resolve(IMAGEDIR_GENSHIN_EXT, `./UI_${modelPath}.png`))) {
-          monster.AnimalCodex.ModelArtPath = 'UI_' + modelPath;
-        }
-      }
-    }
-    return monster;
-  }
-
-  private async selectMonsterDescribe(describeId: number): Promise<MonsterDescribeExcelConfigData> {
-    if (this.state.monsterDescribeCache[describeId]) {
-      return this.state.monsterDescribeCache[describeId];
-    }
-
-    const describe: MonsterDescribeExcelConfigData = await this.knex.select('*').from('MonsterDescribeExcelConfigData')
-      .where({Id: describeId}).first().then(this.commonLoadFirst);
-
-    this.state.monsterDescribeCache[describeId] = describe;
-
-    if (describe && describe.TitleId) {
-      describe.Title = await this.knex.select('*').from('MonsterTitleExcelConfigData')
-        .where({TitleId: describe.TitleId}).first().then(this.commonLoadFirst);
-    }
-
-    if (describe && describe.SpecialNameLabId) {
-      describe.SpecialNameLabList = await this.knex.select('*').from('MonsterSpecialNameExcelConfigData')
-        .where({SpecialNameLabId: describe.SpecialNameLabId}).then(this.commonLoad);
-    }
-
-    return describe;
-  }
-
-  async selectMonsterById(id: number, loadConf?: MonsterLoadConf): Promise<MonsterExcelConfigData> {
-    if (this.state.monsterCache[id]) {
-      return this.state.monsterCache[id];
-    }
-    let monster: MonsterExcelConfigData = await this.knex.select('*').from('MonsterExcelConfigData')
-      .where({Id: id}).first();
-
-    if (monster && !this.state.DisableMonsterCache) {
-      this.state.monsterCache[monster.Id] = monster;
-    }
-
-    return this.commonLoadFirst(monster).then(x => this.postProcessMonster(x, loadConf));
-  }
-
-  async selectMonstersByDescribeId(describeId: number, loadConf?: MonsterLoadConf): Promise<MonsterExcelConfigData[]> {
-    return await this.knex.select('*').from('MonsterExcelConfigData')
-      .where({DescribeId: describeId}).then(this.commonLoad).then(ret => ret.asyncMap(x => this.postProcessMonster(x, loadConf)));
-  }
-
-  async selectAllMonster(loadConf?: MonsterLoadConf): Promise<MonsterExcelConfigData[]> {
-    return await this.knex.select('*').from('MonsterExcelConfigData')
-      .then(this.commonLoad).then(ret => ret.asyncMap(x => this.postProcessMonster(x, loadConf)));
-  }
-  // endregion
-
-  // region Living Beings / Animals
-  private async postProcessAnimalCodex(codex: AnimalCodexExcelConfigData): Promise<AnimalCodexExcelConfigData> {
-    if (!codex) {
-      return codex;
-    }
-    this.state.animalCodexCache[codex.Id] = codex;
-    this.state.animalCodexDCache[codex.DescribeId] = codex;
-
-    if (!codex.Type) {
-      codex.Type = 'CODEX_WILDLIFE';
-    }
-    if (!codex.SubType) {
-      codex.SubType = 'CODEX_SUBTYPE_ELEMENTAL';
-    }
-
-    codex.AnimalDescribe = await this.selectAnimalDescribe(codex.DescribeId);
-    codex.MonsterDescribe = await this.selectMonsterDescribe(codex.DescribeId);
-    codex.Monsters = await this.selectMonstersByDescribeId(codex.DescribeId);
-
-    const codexTextMap = await this.selectAnimalCodexManualTextMap();
-    codex.SubTypeName = codexTextMap[codex.SubType.replace('CODEX_SUBTYPE', 'UI_CODEX_ANIMAL_CATEGORY')];
-
-    if (codex.Type === 'CODEX_WILDLIFE') {
-      codex.Icon = codex.AnimalDescribe?.Icon;
-      codex.NameText = codex.AnimalDescribe?.NameText;
-      codex.NameTextMapHash = codex.AnimalDescribe?.NameTextMapHash;
-      codex.TypeName = codexTextMap['UI_CODEX_ANIMAL_ANIMAL'];
-    } else {
-      codex.Icon = codex.MonsterDescribe?.Icon;
-      codex.NameText = codex.MonsterDescribe?.NameText;
-      codex.NameTextMapHash = codex.MonsterDescribe?.NameTextMapHash;
-      codex.TypeName = codexTextMap['UI_CODEX_ANIMAL_MONSTER'];
-    }
-
-    if (Array.isArray(codex.AltDescTextQuestCondIds)) {
-      codex.AltDescTextQuestConds = [];
-      for (let condId of codex.AltDescTextQuestCondIds) {
-        const questExcel = await this.selectQuestExcelConfigData(condId);
-        if (questExcel && questExcel.MainId) {
-          const mainQuestName = await this.selectMainQuestName(questExcel.MainId);
-          codex.AltDescTextQuestConds.push({
-            NameText: mainQuestName,
-            MainQuestId: questExcel.MainId
-          });
-        } else {
-          codex.AltDescTextQuestConds.push({NameText: undefined, MainQuestId: undefined});
-        }
-      }
-    }
-
-    return codex;
-  }
-
-  private async selectAnimalDescribe(id: number): Promise<AnimalDescribeExcelConfigData> {
-    return await this.knex.select('*').from('AnimalDescribeExcelConfigData')
-      .where({Id: id}).first().then(this.commonLoadFirst);
-  }
-
-  async selectAnimalCodex(id: number): Promise<AnimalCodexExcelConfigData> {
-    if (this.state.animalCodexCache[id]) {
-      return this.state.animalCodexCache[id];
-    }
-    return await this.knex.select('*').from('AnimalCodexExcelConfigData')
-      .where({Id: id}).first().then(this.commonLoadFirst).then(x => this.postProcessAnimalCodex(x));
-  }
-
-  async selectAnimalCodexByDescribeId(describeId: number): Promise<AnimalCodexExcelConfigData> {
-    if (this.state.animalCodexDCache[describeId]) {
-      return this.state.animalCodexDCache[describeId];
-    }
-    return await this.knex.select('*').from('AnimalCodexExcelConfigData')
-      .where({DescribeId: describeId}).first().then(this.commonLoadFirst).then(x => this.postProcessAnimalCodex(x));
-  }
-
-  async selectAllAnimalCodex(): Promise<AnimalCodexExcelConfigData[]> {
-    return await this.knex.select('*').from('AnimalCodexExcelConfigData')
-      .then(this.commonLoad).then(ret => ret.asyncMap(x => this.postProcessAnimalCodex(x)));
-  }
-
-  private async selectAnimalCodexManualTextMap(): Promise<{[manualTextMapId: string]: string}> {
-    return this.cached('AnimalCodexManualTextMap:' + this.outputLangCode, 'json', async () => {
-      const ret: {[lookup: string]: string} = {};
-      await [
-        'UI_CODEX_ANIMAL_MONSTER',
-        'UI_CODEX_ANIMAL_ANIMAL',
-        'UI_CODEX_ANIMAL_MONSTER_NONE',
-        'UI_CODEX_ANIMAL_ANIMAL_NONE',
-        'UI_CODEX_ANIMAL_CATEGORY_ABYSS',
-        'UI_CODEX_ANIMAL_CATEGORY_ANIMAL',
-        'UI_CODEX_ANIMAL_CATEGORY_AUTOMATRON',
-        'UI_CODEX_ANIMAL_CATEGORY_AVIARY',
-        'UI_CODEX_ANIMAL_CATEGORY_BEAST',
-        'UI_CODEX_ANIMAL_CATEGORY_BOSS',
-        'UI_CODEX_ANIMAL_CATEGORY_CRITTER',
-        'UI_CODEX_ANIMAL_CATEGORY_FATUI',
-        'UI_CODEX_ANIMAL_CATEGORY_FISH',
-        'UI_CODEX_ANIMAL_CATEGORY_HILICHURL',
-        'UI_CODEX_ANIMAL_CATEGORY_HUMAN',
-        'UI_CODEX_ANIMAL_CATEGORY_ELEMENTAL',
-        'UI_CODEX_ANIMAL_NAME_LOCKED',
-      ].asyncMap(async key => {
-        ret[key] = (await this.manualtm.selectRecord(key)).TextMapContentText;
-      });
-      return ret;
-    });
-  }
-
-  async selectLivingBeingArchive(): Promise<LivingBeingArchive> {
-    const monsterList = await this.selectAllMonster();
-    const codexList = await this.selectAllAnimalCodex();
-    const codexManualTextMap: {[manualTextMapId: string]: string} = await this.selectAnimalCodexManualTextMap();
-
-    const archive: LivingBeingArchive = {
-      MonsterCodex: defaultMap((key: string|number): LivingBeingArchiveGroup => ({
-        SubType: String(key),
-        NameText: codexManualTextMap[String(key).replace('CODEX_SUBTYPE', 'UI_CODEX_ANIMAL_CATEGORY')],
-        CodexList: [],
-      })),
-      WildlifeCodex: defaultMap((key: string|number): LivingBeingArchiveGroup => ({
-        SubType: String(key),
-        NameText: codexManualTextMap[String(key).replace('CODEX_SUBTYPE', 'UI_CODEX_ANIMAL_CATEGORY')],
-        CodexList: [],
-      })),
-      NonCodexMonsters: {
-        HOMEWORLD: {
-          SubType: 'CUSTOM_HOMEWORLD',
-          NameText: 'HomeWorld',
-          CodexList: [],
-          MonsterList: []
-        },
-        NAMED: {
-          SubType: 'CUSTOM_NAMED',
-          NameText: 'Named',
-          CodexList: [],
-          MonsterList: []
-        },
-        UNNAMED: {
-          SubType: 'CUSTOM_UNNAMED',
-          NameText: 'Unnamed',
-          CodexList: [],
-          MonsterList: []
-        },
-      },
-    };
-
-    const monsterIdsInCodex: Set<number> = new Set();
-
-    for (let codex of codexList) {
-      if (codex.Type === 'CODEX_MONSTER') {
-        archive.MonsterCodex[codex.SubType].CodexList.push(codex);
-      } else {
-        archive.WildlifeCodex[codex.SubType].CodexList.push(codex);
-      }
-      codex.Monsters.forEach(m => monsterIdsInCodex.add(m.Id));
-    }
-
-    for (let monster of monsterList) {
-      if (!monsterIdsInCodex.has(monster.Id)) {
-        if (monster.MonsterName.toLowerCase().includes('homeworld')) {
-          archive.NonCodexMonsters.HOMEWORLD.MonsterList.push(monster);
-        } else if (monster.NameText || monster.Describe?.NameText) {
-          archive.NonCodexMonsters.NAMED.MonsterList.push(monster);
-        } else {
-          archive.NonCodexMonsters.UNNAMED.MonsterList.push(monster);
-        }
-      }
-    }
-
-    return archive;
-  }
-  // endregion
-
   // region Avatars
   async selectAllAvatars(): Promise<AvatarExcelConfigData[]> {
     return await this.knex.select('*').from('AvatarExcelConfigData').then(this.commonLoad);
@@ -2221,6 +1958,69 @@ export class GenshinControl extends AbstractControl<GenshinControlState> {
   // region Reminders
   async selectAllReminders(): Promise<ReminderExcelConfigData[]> {
     return await this.knex.select('*').from('ReminderExcelConfigData').then(this.commonLoad);
+  }
+
+  async selectAllRemindersAddedInVersion(version: string): Promise<ReminderExcelConfigData[]> {
+    const knex = this.knex;
+    return await knex.select('ReminderExcelConfigData.*')
+      .from('ReminderExcelConfigData')
+      .join('excel_changes', function() {
+        this.on(knex.raw('excel_changes.key = "ReminderExcelConfigData"."Id"::text'));
+      })
+      .where({
+        'excel_changes.excel_file': 'ReminderExcelConfigData',
+        'excel_changes.version': version,
+        'excel_changes.change_type': 'added',
+      })
+      .then(this.commonLoad);
+  }
+
+  async selectReminderVersionCounts(): Promise<ReminderExcelByVersionCounts> {
+    let rawRows: {version: string, count: string}[] = await this.knex('excel_changes')
+      .select('version')
+      .count('* as count')
+      .where({
+        excel_file: 'ReminderExcelConfigData',
+        change_type: 'added',
+      })
+      .groupBy('version')
+      .then();
+    const rows: ReminderExcelByVersionCount[] = rawRows
+      .map(row => ({
+        version: this.gameVersions.get(row.version),
+        count: parseInt(row.count)
+      }));
+    sort(rows, 'version.idxOrder');
+    return rows;
+  }
+
+  async selectRemindersWithoutChangelogEntry(): Promise<ReminderExcelConfigData[]> {
+    const knex = this.knex;
+    return await knex.select('*')
+      .from('ReminderExcelConfigData')
+      .whereNotExists(
+        knex.select(knex.raw('1'))
+          .from('excel_changes')
+          .where('excel_changes.excel_file', 'ReminderExcelConfigData')
+          .andWhere('excel_changes.change_type', 'added')
+          .andWhere(knex.raw('excel_changes.key = "ReminderExcelConfigData"."Id"::text'))
+      )
+      .then(this.commonLoad);
+  }
+
+  async selectRemindersWithoutChangelogEntryCount(): Promise<number> {
+    const knex = this.knex;
+    const row = await knex('ReminderExcelConfigData')
+      .count('* as count')
+      .whereNotExists(
+        knex.select(knex.raw('1'))
+          .from('excel_changes')
+          .where('excel_changes.excel_file', 'ReminderExcelConfigData')
+          .andWhere('excel_changes.change_type', 'added')
+          .andWhere(knex.raw('excel_changes.key = "ReminderExcelConfigData"."Id"::text'))
+      )
+      .first() as {count: string};
+    return parseInt(row.count);
   }
 
   async selectReminderById(id: number): Promise<ReminderExcelConfigData> {
@@ -2699,7 +2499,7 @@ export class GenshinControl extends AbstractControl<GenshinControlState> {
       .where({FurnitureId: furniture.Id}).first().then(this.commonLoadFirst);
     if (ret) {
       ret.Furniture = furniture;
-      ret.Monster = await this.selectMonsterById(ret.MonsterId);
+      ret.Monster = await this.lb.selectMonsterById(ret.MonsterId);
     }
     return ret;
   }
@@ -3646,7 +3446,7 @@ export class GenshinControl extends AbstractControl<GenshinControlState> {
   // region Achievements
   async selectAchievementGoals(): Promise<AchievementGoalExcelConfigData[]> {
     return await this.cached('AchievementGoals:' + this.outputLangCode, 'json', async () => {
-      let goals: AchievementGoalExcelConfigData[] = await this.readDataFile('./ExcelBinOutput/AchievementGoalExcelConfigData.json');
+      let goals: AchievementGoalExcelConfigData[] = await this.readExcelDataFile('./AchievementGoalExcelConfigData.json');
       sort(goals, 'OrderId');
       for (let goal of goals) {
         if (!goal.Id) {
@@ -3664,7 +3464,7 @@ export class GenshinControl extends AbstractControl<GenshinControlState> {
   async selectAchievements(goalIdConstraint?: number): Promise<AchievementsByGoals> {
     const goals: AchievementGoalExcelConfigData[] = await this.selectAchievementGoals();
 
-    const achievements: AchievementExcelConfigData[] = await this.readDataFile('./ExcelBinOutput/AchievementExcelConfigData.json');
+    const achievements: AchievementExcelConfigData[] = await this.readExcelDataFile('./AchievementExcelConfigData.json');
     sort(achievements, 'OrderId');
 
     const ret: AchievementsByGoals = defaultMap((goalId: number) => ({

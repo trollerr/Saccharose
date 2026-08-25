@@ -23,7 +23,7 @@ export async function inspectDataFile(ctrl: AbstractControl, opt: InspectOpt): P
     opt.printRecordIfFieldNotEmpty = [];
 
   const tableName = basename(opt.file).split('.json')[0];
-  const result: any[] = await ctrl.readDataFile(opt.file, false, opt.preNormFilter);
+  const result: any[] = await ctrl.readBaseDataFile(opt.file, false, opt.preNormFilter);
 
   let fieldsToValues: {[fieldName: string]: Set<any>} = defaultMap('Set');
   let fieldsWithUniqueValues: Set<string> = new Set();

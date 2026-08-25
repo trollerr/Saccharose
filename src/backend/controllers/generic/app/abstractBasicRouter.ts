@@ -14,13 +14,12 @@ export async function sendExcelViewerTableResponse(ctrl: AbstractControl, req: R
   const excels: FileAndSize[] = await ctrl.getExcelFileNames();
 
   const targetExcelName = removeSuffix(String(req.params.file), '.json');
-  const targetExcelPath = ctrl.getExcelPath() + '/' + targetExcelName + '.json';
 
   let foundJson: any[] = null;
   let foundTarget = excels.find(e => e.name === targetExcelName);
 
   if (foundTarget) {
-    foundJson = foundTarget.size < 20_000_000 ? await ctrl.readDataFile(targetExcelPath, true) : null;
+    foundJson = foundTarget.size < 20_000_000 ? await ctrl.readExcelDataFile(`./${targetExcelName}.json`, true) : null;
   }
 
   await res.renderComponent(ExcelViewerTablePage, {

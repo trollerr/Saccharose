@@ -1,6 +1,7 @@
 import { ConfigCondition } from './general-types.ts';
 import { Readable } from './readable-types.ts';
 import { NpcExcelConfigData } from './npc-types.ts';
+import { GameVersion } from '../game-versions.ts';
 
 export type TalkRoleType =
   'TALK_ROLE_NPC'
@@ -462,6 +463,9 @@ export interface ReminderExcelConfigData {
   HasAudio: boolean,
   Style?: ReminderStyle,
 }
+
+export type ReminderExcelByVersionCount = {version: GameVersion, count: number};
+export type ReminderExcelByVersionCounts = ReminderExcelByVersionCount[];
 
 export type CodexQuestSpeakerTextType = 'Aside' | 'IPCustomizedWhole' | 'Narratage' | 'SpeakerKnown' | 'SpeakerPlayer';
 export type CodexQuestContentTextType = 'Aside' | 'DialogNormal' | 'IPCustomizedWhole' | 'Narratage';

@@ -6,6 +6,7 @@ import {
 } from '../../../shared/types/changelog-types.ts';
 import { AbstractControl } from './abstractControl.ts';
 import { GameVersion } from '../../../shared/types/game-versions.ts';
+import { isUnset } from '../../../shared/util/genericUtil.ts';
 
 // region INTERFACE
 // --------------------------------------------------------------------------------------------------------------
@@ -52,14 +53,17 @@ export class ExcelChangelog {
     return this.toRefs(rows.map(row => toExcelChangeRecord(row)));
   }
 
-  async selectChangeRefAddedAt(id: string|number): Promise<ExcelChangeRef[]>
-  async selectChangeRefAddedAt(id: string|number, excelFile: string): Promise<ExcelChangeRef>
-  async selectChangeRefAddedAt(id: string|number, excelFile?: string): Promise<ExcelChangeRef|ExcelChangeRef[]> {
-    const res: ExcelChangeRef[] = (await this.selectChangeRefs(id, excelFile)).filter(r => r.changeType === 'added');
-    return excelFile ? res[0] : res;
+  async selectChangeRefAddedAt(id: string|number, excelFile: string): Promise<ExcelChangeRef> {
+    if (isUnset(excelFile))
+      throw new Error('excelFile must be provided for selectChangeRefAddedAt');
+    return (await this.selectChangeRefs(id, excelFile)).filter(r => r.changeType === 'added')[0];
   }
 
-  async selectChangeRefs(key: string|number, excelFile?: string): Promise<ExcelChangeRef[]> {
+  async selectChangeRefAddedAtWithinAnyExcel(id: string|number): Promise<ExcelChangeRef[]> {
+    return (await this.selectChangeRefs(id, null)).filter(r => r.changeType === 'added');
+  }
+
+  async selectChangeRefs(key: string|number, excelFile: string): Promise<ExcelChangeRef[]> {
     if (this.isDisabled)
       return [];
     if (excelFile && excelFile.endsWith('.json')) {

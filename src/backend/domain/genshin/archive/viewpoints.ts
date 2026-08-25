@@ -86,7 +86,7 @@ async function postProcessViewpoint(ctrl: GenshinControl, viewpoint: ViewCodexEx
 }
 
 export async function selectViewpointsByIds(ctrl: GenshinControl, viewpointIds: number[]): Promise<ViewCodexExcelConfigData[]> {
-  let viewpoints: ViewCodexExcelConfigData[] = await ctrl.readDataFile('./ExcelBinOutput/ViewCodexExcelConfigData.json');
+  let viewpoints: ViewCodexExcelConfigData[] = await ctrl.readExcelDataFile('./ViewCodexExcelConfigData.json');
   viewpoints = viewpoints.filter(v => viewpointIds.includes(v.Id));
 
   const areas: WorldAreaConfigData[] = await ctrl.selectWorldAreas();
@@ -100,7 +100,7 @@ export async function selectViewpointsByIds(ctrl: GenshinControl, viewpointIds: 
 }
 
 export async function selectViewpoints(ctrl: GenshinControl, cityIdConstraint?: number): Promise<ViewpointsByRegion> {
-  const viewpoints: ViewCodexExcelConfigData[] = await ctrl.readDataFile('./ExcelBinOutput/ViewCodexExcelConfigData.json');
+  const viewpoints: ViewCodexExcelConfigData[] = await ctrl.readExcelDataFile('./ViewCodexExcelConfigData.json');
   const areas: WorldAreaConfigData[] = await ctrl.selectWorldAreas();
   const ret: ViewpointsByRegion = defaultMap('Array');
 

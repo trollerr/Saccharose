@@ -85,7 +85,7 @@ export class GCGControl {
     this.charIconsLcSet = new Set<string>(this.charIcons.map(s => s.toLowerCase().replace('.png', '')));
 
     this.charSkillDamageTable = await this.ctrl.cached('GCG:CharSkillDamageList', 'json', async () => {
-      const arr: GCGCharSkillDamage[] = await this.ctrl.readDataFile('./GCGCharSkillDamage.json');
+      const arr: GCGCharSkillDamage[] = await this.ctrl.readBaseDataFile('./GCGCharSkillDamage.json');
       return mapBy(arr, 'Name');
     });
 
@@ -451,7 +451,7 @@ export class GCGControl {
         }
       }
       if (stage.BossLevel && stage.BossLevel.MonsterId) {
-        stage.BossLevel.Monster = await this.ctrl.selectMonsterById(stage.BossLevel.MonsterId);
+        stage.BossLevel.Monster = await this.ctrl.lb.selectMonsterById(stage.BossLevel.MonsterId);
       }
     }
     if (!disableLoad.disableWorldLevelLoad) {

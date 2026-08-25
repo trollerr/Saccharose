@@ -1,5 +1,12 @@
+// noinspection JSUnusedGlobalSymbols
+
 import AsyncLock from 'async-lock';
 
+/**
+ * A basic holder for a value of type T. It provides methods to get and set the value.
+ *
+ * This does not provide any thread-safety guarantees. If you need thread-safe operations, consider using AtomicReference or AtomicInt.
+ */
 export class ValueHolder<T> {
   protected value: T;
 
@@ -19,6 +26,11 @@ export class ValueHolder<T> {
   }
 }
 
+/**
+ * A holder for an integer value. It extends ValueHolder<number> and provides additional methods for incrementing and decrementing the value.
+ *
+ * This does not provide any thread-safety guarantees. If you need thread-safe operations, consider using AtomicInt.
+ */
 export class IntHolder extends ValueHolder<number> {
   constructor(initialValue: number = 0) {
     super(initialValue);
@@ -49,6 +61,17 @@ export class IntHolder extends ValueHolder<number> {
   }
 }
 
+/**
+ * A "thread-safe" holder for a value of type T.
+ *
+ * It provides methods to get and set the value.
+ *
+ * This class uses an AsyncLock to ensure that get and set operations happen in critical sections, preventing race conditions.
+ *
+ * Although JavaScript is single-threaded, that doesn't mean that you can't have race conditions as a result of
+ * asynchronous code, in which multiple functions may be executing at the "same time" with interweaved execution
+ * of their lines of code.
+ */
 export class AtomicReference<T> {
   protected myLock: AsyncLock;
   protected value: T;
@@ -75,6 +98,17 @@ export class AtomicReference<T> {
   }
 }
 
+/**
+ * A "thread-safe" holder for an integer value.
+ *
+ * It extends AtomicReference<number> and provides additional methods for incrementing and decrementing the value.
+ *
+ * This class uses an AsyncLock to ensure that all operations happen in critical sections, preventing race conditions.
+ *
+ * Although JavaScript is single-threaded, that doesn't mean that you can't have race conditions as a result of
+ * asynchronous code, in which multiple functions may be executing at the "same time" with interweaved execution
+ * of their lines of code.
+ */
 export class AtomicInt extends AtomicReference<number> {
   constructor(initialValue: number = 0) {
     super(initialValue);

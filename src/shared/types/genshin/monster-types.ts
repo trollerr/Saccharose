@@ -3,9 +3,10 @@ import { HomeworldAnimalExcelConfigData } from './homeworld-types.ts';
 // Monster
 // --------------------------------------------------------------------------------------------------------------
 
-export interface MonsterLoadConf {
+export interface LivingBeingLoadConf {
   LoadHomeWorldAnimal?: boolean,
   LoadModelArtPath?: boolean,
+  LoadAltDescTextQuestConds?: boolean,
 }
 
 export interface MonsterExcelConfigData {
@@ -173,7 +174,9 @@ export type AnimalCodexSubType =
   'CODEX_SUBTYPE_FISH'        |
   'CODEX_SUBTYPE_HILICHURL'   |
   'CODEX_SUBTYPE_HUMAN'       ;
+
 export type AnimalCodexCountType = 'CODEX_COUNT_TYPE_CAPTURE' | 'CODEX_COUNT_TYPE_FISH' | 'CODEX_COUNT_TYPE_KILL';
+
 export interface AnimalCodexExcelConfigData {
   Id: number,
   DescribeId: number,

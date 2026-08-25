@@ -196,7 +196,7 @@ async function _generateGenshinChangelogNewRecordSummary(ctrl: GenshinControl, g
       out.bydCostumeSuits = costumeSuits;
     }),
 
-    newIntKeysOf('MonsterExcelConfigData').asyncMap(monsterId => ctrl.selectMonsterById(monsterId)).then(monsters => {
+    newIntKeysOf('MonsterExcelConfigData').asyncMap(monsterId => ctrl.lb.selectMonsterById(monsterId)).then(monsters => {
       out.monsters = monsters.filter(m => !m.AnimalDescribe);
       out.wildlife = monsters.filter(m => !!m.AnimalDescribe);
     }),

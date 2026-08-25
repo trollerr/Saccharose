@@ -178,7 +178,7 @@ export async function importSearchIndex() {
   // --------------------------------------------------------------------------------------------------------------
   {
     console.log(chalk.bold('Generating achievement index...'));
-    const achievementList: AchievementExcelConfigData[] = await ctrl.readDataFile('./ExcelBinOutput/AchievementExcelConfigData.json');
+    const achievementList: AchievementExcelConfigData[] = await ctrl.readExcelDataFile('./AchievementExcelConfigData.json');
     const achievementIndex: IndexAccumulator = new IndexAccumulator('Achievement');
 
     for (let achievement of achievementList) {

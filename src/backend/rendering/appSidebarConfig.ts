@@ -39,7 +39,7 @@ export const SIDEBAR_CONFIG: { [siteMode: string]: SiteSidebar } = {
             id: 'media-data',
             name: 'Media Data',
             items: [
-              { id: 'media', name: 'Media', link: '/genshin/media', bodyClass: 'page--media' },
+              { id: 'media', name: 'Media', link: '/genshin/media', bodyClass: 'page--media', rightSideButton: { name: 'Search', link: '/genshin/media/search' }  },
             ]
           },
           {

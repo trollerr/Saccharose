@@ -1,7 +1,6 @@
 import { create } from '../../../rendering/customRouter.ts';
 import {
   reminderGenerateAll,
-  reminderGenerateFromSpeakerTextMapHashes,
 } from '../../../domain/genshin/dialogue/reminder_generator.ts';
 import { GenshinControl, getGenshinControl } from '../../../domain/genshin/genshinControl.ts';
 import { toInt } from '../../../../shared/util/numberUtil.ts';
@@ -27,6 +26,8 @@ import {
 } from '../../../domain/genshin/dialogue/basic_dialogue_generator.ts';
 import GenshinAvatarCondDialoguePage from '../../../components/genshin/dialogue/GenshinAvatarCondDialoguePage.vue';
 import { inDialogueReadablesHelper, questStillsHelper } from '../api/DialogueResources.ts';
+import { GenshinVersions } from '../../../../shared/types/game-versions.ts';
+import NotFoundErrorCard from '../../../components/errors/NotFoundErrorCard.vue';
 
 export default async function(): Promise<Router> {
   const router: Router = create();
@@ -114,9 +115,32 @@ export default async function(): Promise<Router> {
   });
 
   router.get('/reminders/all', async (req: Request, res: Response) => {
+    const ctrl = getGenshinControl(req);
     await res.renderComponent(GenshinAllReminders, {
       title: 'All Reminders',
-      reminderGroups: await reminderGenerateAll(getGenshinControl(req)),
+      version: null,
+      reminderGroups: null,
+      versionCounts: await ctrl.selectReminderVersionCounts(),
+      unknownCount: await ctrl.selectRemindersWithoutChangelogEntryCount(),
+      bodyClass: ['page--all-reminders']
+    });
+  });
+
+  router.get('/reminders/all/:version', async (req: Request, res: Response) => {
+    const gameVersion = GenshinVersions.get(req.params.version);
+
+    if (!gameVersion) {
+      await res.renderComponent(NotFoundErrorCard);
+      return;
+    }
+
+    const ctrl = getGenshinControl(req);
+    await res.renderComponent(GenshinAllReminders, {
+      title: 'All Reminders',
+      version: gameVersion,
+      reminderGroups: await reminderGenerateAll(ctrl, gameVersion),
+      versionCounts: await ctrl.selectReminderVersionCounts(),
+      unknownCount: await ctrl.selectRemindersWithoutChangelogEntryCount(),
       bodyClass: ['page--all-reminders']
     });
   });

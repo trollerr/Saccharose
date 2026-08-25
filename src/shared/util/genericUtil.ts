@@ -1,3 +1,5 @@
+// noinspection RedundantIfStatementJS
+
 import moment from 'moment';
 import { arrayContains, isArrayLike, isIterable } from './arrayUtil.ts';
 import cloneDeep from 'clone-deep';
@@ -5,18 +7,53 @@ import { escapeHtml, sentenceJoin } from './stringUtil.ts';
 
 export type Type<T> = { new(...args: any[]): T };
 
+/**
+ * Checks if the given value is unset (i.e., undefined or null).
+ *
+ * Named this way as the "opposite" of {@link isset}.
+ *
+ * @param x The value to check.
+ * @returns {boolean} true if the value is unset, false otherwise.
+ */
 export function isUnset(x: any): boolean {
   return typeof x === 'undefined' || x === null;
 }
 
+/**
+ * Checks if the given value is set (i.e., not undefined and not null).
+ *
+ * Named this way after PHP's `isset()` function.
+ *
+ * @param x The value to check.
+ * @returns {boolean} true if the value is set, false otherwise.
+ */
 export function isset(x: any): boolean {
   return !isUnset(x);
 }
 
+/**
+ * Checks if the given value is an object (i.e., not null and of type 'object').
+ *
+ * @param x The value to check.
+ * @returns {boolean} true if the value is an object, false otherwise.
+ */
 export function isObject(x: any): boolean {
   return !!x && typeof x === 'object'; // must check !!x because `typeof null` also returns 'object'
 }
 
+/**
+ * Checks if the given value is "empty". The definition of "empty" varies based on the type of the value:
+ * - `undefined` or `null` are considered empty.
+ * - Booleans and numbers are never considered empty. This is because `false` and `0` are semantically meaningful values.
+ * - Strings are considered empty if they are empty or contain only whitespace.
+ * - Arrays and array-like objects are considered empty if they have a length of 0.
+ * - Maps and Sets are considered empty if they have a size of 0.
+ * - Iterables are considered empty if they yield no values.
+ * - Plain objects are considered empty if they have no own enumerable properties.
+ *
+ * @param x The value to check for emptiness.
+ * @returns {boolean} true if the value is considered empty, false otherwise.
+ */
 export function isEmpty(x: any): boolean {
   if (typeof x === 'undefined' || x === null) {
     return true;
@@ -43,11 +80,22 @@ export function isEmpty(x: any): boolean {
   }
 }
 
+/**
+ * Checks if the given value is not "empty". This is the negation of the {@link isEmpty} function.
+ * @param x The value to check for non-emptiness.
+ * @returns {boolean} true if the value is not considered empty, false otherwise.
+ */
 export function isNotEmpty(x: any): boolean {
   return !isEmpty(x);
 }
 
-export function includes<T>(obj: any, item: any) {
+/**
+ * Checks if the given object (which can be a string, array, Map, Set, or iterable) includes the specified item.
+ * @param obj The object to check for inclusion. It can be a string, array, Map, Set, or any iterable.
+ * @param item The item to check for inclusion in the object.
+ * @returns {boolean} true if the item is included in the object, false otherwise.
+ */
+export function includes(obj: any, item: any) {
   if (typeof obj === 'string' && typeof item === 'string') {
     return obj.includes(item);
   } else if (Array.isArray(obj)) {
@@ -65,15 +113,21 @@ export function includes<T>(obj: any, item: any) {
   }
 }
 
+/**
+ * Checks if the given object does not include the specified item. This is the negation of the {@link includes} function.
+ * @param obj The object to check for non-inclusion. It can be a string, array, Map, Set, or any iterable.
+ * @param item The item to check for non-inclusion in the object.
+ * @returns {boolean} true if the item is not included in the object, false otherwise.
+ */
 export function notIncludes(obj: any, item: any) {
   return !includes(obj, item);
 }
 
 /**
- * Checks if input object is a Promise.
+ * Checks if the input object is a Promise.
  * @returns {boolean} true if a promise, false otherwise
  */
-export function isPromise(o): o is Promise<any> {
+export function isPromise(o: any): o is Promise<any> {
   return (
     o &&
     (o instanceof Promise ||
@@ -83,14 +137,36 @@ export function isPromise(o): o is Promise<any> {
   );
 }
 
+/**
+ * Converts a Promise of any type to a Promise of void, effectively ignoring the resolved value.
+ * @param x The input Promise of any type.
+ * @returns A Promise that resolves to void, ignoring the resolved value of the input Promise.
+ */
 export function toVoidPromise(x: Promise<any>): Promise<void> {
   return x.then(() => {
   });
 }
 
+/**
+ * A list of strings that are considered "truthy" when converting to a boolean. This is used in the `toBoolean` function to determine if a string should be treated as true.
+ * The list includes common representations of true, such as "true", "1", "yes", "on", and various symbols like "✓" and "✔".
+ */
 export const TRUTHY_STRINGS = new Set(['t', 'true', '1', 'y', 'yes', 'on', 'en', 'enable', 'enabled',
   'active', 'activated', 'positive', 'allow', 'allowed', '+', '+', '✓', '✔', '🗸', '☑', '🗹', '✅']);
 
+/**
+ * Converts a value to a boolean. The conversion rules are as follows:
+ * - If the value is already a boolean, it is returned as-is.
+ * - If the value is a string, it is converted to lowercase and trimmed, and then checked against a set of truthy strings. If it matches any of those strings, it returns true; otherwise, false.
+ * - If the value is a number, it returns true if the number is greater than 0; otherwise, false.
+ * - If the value is an array or array-like object, it returns true if the length is greater than 0; otherwise, false.
+ * - If the value is a Map or Set, it returns true if the size is greater than 0; otherwise, false.
+ * - If the value is an iterable object, it converts it to an array and checks if the length is greater than 0; otherwise, false.
+ * - For all other types of values, it uses JavaScript's built-in truthiness evaluation (i.e., `!!x`)
+ *
+ * @param x The value to convert to a boolean.
+ * @returns A boolean representation of the input value.
+ */
 export function toBoolean(x: any): boolean {
   if (typeof x === 'boolean') {
     return x;
@@ -122,7 +198,7 @@ export function timeConvert(UNIX_timestamp: Date | number, format: boolean | str
     return String(UNIX_timestamp);
   }
 
-  let a;
+  let a: moment.Moment;
   if (UNIX_timestamp instanceof Date) {
     a = moment(UNIX_timestamp);
   } else if (typeof UNIX_timestamp === 'number') {
@@ -233,24 +309,19 @@ export function humanTiming(inputTime: Date | number | null, opts?: HumanTimingO
   return sentenceJoin(parts) + (suffix ? ' ' + suffix : suffix);
 }
 
-export function printTimestamp(ts: Date|number|string, format=null): string {
-  if (typeof ts === 'string')
-    ts = new Date(ts);
-  if (ts instanceof Date)
-    ts = ts.getTime();
-  if (typeof ts !== 'number')
-    ts = 'n/a';
-  if (!format)
-    format = 'MMM DD YYYY hh:mm:ss a';
-
-  return createElementHtml('span', {
-    class: 'timestamp is--formatted is--unconverted',
-    'data-timestmap': ts,
-    'data-format': format,
-    text: format,
-  });
-}
-
+/**
+ * Returns a string of an HTML element that will represent the {@link humanTiming} of the given timestamp.
+ * This element will be empty, and this method does not actually calculate the human timing itself;
+ * client-side code will automatically and routinely update the element's inner text to the correct human timing.
+ *
+ * This way "5 seconds ago" will automatically update to "6 seconds ago", "7 seconds ago", and so on.
+ *
+ * The client-side code that does this is in `timestampInterval.ts`
+ *
+ * @param ts The timestamp, either as a Date object, a UNIX timestamp (milliseconds), or a string that can be parsed into a Date.
+ * @param opts Options for the human timing display, such as suffix, current time, just now text, and precision.
+ * @returns A string of an HTML element that will represent the human timing of the given timestamp.
+ */
 export function printHumanTiming(ts: Date|number|string, opts?: HumanTimingOpts): string {
   if (typeof ts === 'string')
     ts = new Date(ts);
@@ -292,6 +363,18 @@ export function printHumanTiming(ts: Date|number|string, opts?: HumanTimingOpts)
   return createElementHtml('span', attrs);
 }
 
+/**
+ * Creates an HTML element as a string with the given tag and attributes.
+ *
+ * Special attributes:
+ * - `text`, `innerText`, or `textContent`: sets the text content of the element (escaped).
+ * - `html`, `HTML`, `innerHTML`, or `innerHtml`: sets the inner HTML of the element (not escaped).
+ *
+ * @param tag   The HTML tag name (e.g., 'div', 'span', 'a').
+ * @param attrs An object containing the attributes to set on the element.
+ *              The keys are attribute names and the values are attribute values.
+ * @returns A string representing the HTML element with the given tag and attributes.
+ */
 export function createElementHtml(tag: string, attrs: {[attr: string]: string|number|boolean} = {}): string {
   let part1: string = `<${tag}`;
   let part2: string = '>';
@@ -314,6 +397,14 @@ export function createElementHtml(tag: string, attrs: {[attr: string]: string|nu
   return part1 + part2 + part3 + part4;
 }
 
+/**
+ * Shallow clones an object or array.
+ *
+ * This is a simple utility function that uses the spread operator for arrays and `Object.assign` for objects.
+ *
+ * @param o The object or array to clone.
+ * @returns A shallow clone of the object or array.
+ */
 export function shallowClone(o: any): any {
   if (Array.isArray(o)) {
     return [...o];
@@ -402,6 +493,19 @@ type CompareTernaryMode = 'equals' | 'notEquals' | 'includes' | 'notIncludes' | 
   | 'isTruthy' | 'isFalsy' | 'isGreaterThan' | 'isLessThan' | 'isGreaterThanOrEqual' | 'isLessThanOrEqual';
 type CompareTernaryComparison<T> = { value: T, mode: CompareTernaryMode };
 
+// noinspection JSUnusedGlobalSymbols
+/**
+ * Semantic ternary expression builder. This is the base class for CompareTernary, which is the main class to use.
+ *
+ * @example
+ *   const result = new CompareTernaryGroup(value)
+ *     .equals(1).or.equals(2)
+ *     .or.group(g => g.isGreaterThan(3).and.isLessThanOrEqual(30))
+ *     .then('one or two, or between 3 and 30', 'not one or two, and not between 3 and 30');
+ *
+ * @param value The value to compare against.
+ * @returns A CompareTernaryGroup object that allows for chaining comparisons and then/else values.
+ */
 export class CompareTernaryGroup<T> {
   protected value: T;
   protected comparisons: (CompareTernaryComparison<T> | CompareTernaryGroup<T>)[] = [];
@@ -584,11 +688,24 @@ export class CompareTernary<T> extends CompareTernaryGroup<T> {
     super(value);
   }
 
+  /**
+   * Sets the default value to return if no comparisons match and no else value is provided in the `then` method.
+   *
+   * @param elseValue The default value to return if no comparisons match and no else value is provided in the `then` method.
+   * @returns The CompareTernary instance for chaining.
+   */
   setDefaultElse(elseValue: any): CompareTernary<T> {
     this.defaultElseValue = elseValue;
     return this;
   }
 
+  /**
+   * Returns the `thenValue` if the comparisons match, otherwise returns the `elseValue` (or the default else value if `elseValue` is not set).
+   *
+   * @param thenValue The value to return if the comparisons match.
+   * @param elseValue The value to return if the comparisons do not match. If not provided, the default else value will be used if set.
+   * @returns The `thenValue` if the comparisons match, otherwise the `elseValue` (or the default else value if `elseValue` is not set).
+   */
   then<R>(thenValue: R, elseValue?: R): R {
     if (typeof elseValue === 'undefined') {
       elseValue = this.defaultElseValue;
@@ -596,26 +713,51 @@ export class CompareTernary<T> extends CompareTernaryGroup<T> {
     return this.cmpResult() ? thenValue : elseValue;
   }
 
+  /**
+   * Returns true if the comparisons match, otherwise false.
+   */
   get(): boolean {
     return !!this.cmpResult();
   }
 }
 
+/**
+ * Semantic ternary expression builder.
+ *
+ * @example
+ *   const result = ternary(value)
+ *     .equals(1).or.equals(2)
+ *     .then('one or two', 'not one or two');
+ *
+ * @param value The value to compare against.
+ * @returns A CompareTernary object that allows for chaining comparisons and then/else values.
+ */
 export function ternary<T>(value: T): CompareTernary<T> {
   return new CompareTernary(value);
 }
 
-export function throttle<T extends Function>(fn: T, delayMs: number): T {
-  let lastTime: number = 0;
-  return <T> <any> function(...args) {
-    let now: number = new Date().getTime();
-    if (now - lastTime >= delayMs) {
-      fn(...args);
-      lastTime = now;
-    }
-  };
-}
-
+/**
+ * Creates a plain object "map" that returns a default value for any property that doesn't exist yet.
+ * This is very useful for use cases like counting occurrences of things, grouping things, etc.
+ *
+ * @param defaultValue The default value to return for any property that doesn't exist yet and is actually set as the
+ * value for that property. Possible values:
+ * - A function that takes the property name and returns a value.
+ * - A string indicating a built-in type to use as the default value. Possible values:
+ *   `Set`, `Map`, `Array`, `Object`, `Zero`, `One`, `Infinity`, `-Infinity`.
+ * - A constructor function (class) that will be called with `new` to create the default value.
+ * @param initialObj The initial object to use as the base for the map. If not provided, an empty object will be used.
+ * @example
+ *   const counts = defaultMap<number>('Zero');
+ *   counts['apples']++;
+ *   counts['oranges'] += 2;
+ *   console.log(counts); // { apples: 1, oranges: 2 }
+ * @example
+ *   const groups = defaultMap<Set<string>>('Set');
+ *   groups['fruits'].add('apple');
+ *   groups['fruits'].add('banana');
+ *   console.log(groups); // { fruits: Set { 'apple', 'banana' } }
+ */
 export function defaultMap<T extends object>(defaultValue:
                                                ((prop: keyof T) => T[keyof T])
                                                |'Set'|'Map'|'Array'|'Object'|'Zero'|'One'|'Infinity'|'-Infinity'
@@ -655,6 +797,11 @@ export function defaultMap<T extends object>(defaultValue:
   });
 }
 
+/**
+ * Checks if the given value is an ES6 class (i.e., a constructor function that cannot be called without `new`).
+ * @param fn The value to check.
+ * @returns true if the value is an ES6 class, false otherwise.
+ */
 export function isESClass(fn: any): fn is Type<any> {
   return typeof fn === 'function' &&
     Object.getOwnPropertyDescriptor(
@@ -663,6 +810,14 @@ export function isESClass(fn: any): fn is Type<any> {
     )?.writable === false
 }
 
+// noinspection JSUnusedGlobalSymbols
+/**
+ * Returns the approximate size of an object in bytes.
+ * This is used for testing/debugging and is not ordinarily used otherwise, hence the unused warning suppression.
+ *
+ * @param object The object to measure.
+ * @returns The approximate size of the object in bytes.
+ */
 export function getRoughSizeOfObject(object: any) {
   const seenObjects = [];
   const stack = [object];
@@ -713,4 +868,71 @@ export function getRandomInt(min, max) {
   min = Math.ceil(min);
   max = Math.floor(max);
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/**
+ * Checks if the given value is "atomic" (i.e., a single indivisible value). This does not necessarily mean that an
+ * atomic type doesn't have any internal state, but rather than it is to be treated as a single value for the purposes
+ * of comparison, copying, traversal, etc.
+ *
+ * This, however, only takes into account built-in types/objects of JavaScript.
+ *
+ * List of what this function considers atomic:
+ * - null, undefined
+ * - All primitive types (string, number, boolean, symbol, bigint)
+ * - Functions (semantically atomic)
+ * - Date
+ * - RegExp
+ * - Error
+ * - Promise
+ * - ArrayBuffer
+ * - DataView
+ * - WeakMap
+ * - WeakSet
+ * - Typed arrays (e.g., Uint8Array, Float32Array, etc.)
+ *
+ * Anything else is considered non-atomic, including but not necessarily limited to:
+ * - Plain objects (e.g., {})
+ * - Arrays (e.g., [])
+ * - Maps
+ * - Sets
+ * - Custom classes/objects
+ *
+ * @param value
+ */
+export function isAtomic(value: any) {
+  if (isUnset(value)) return true;
+
+  const type = typeof value;
+
+  // All primitives
+  if (type !== "object" && type !== "function") {
+    return true;
+  }
+
+  // Functions are semantically atomic
+  if (type === "function") {
+    return true;
+  }
+
+  // Atomic-ish built-in objects
+  if (
+    value instanceof Date ||
+    value instanceof RegExp ||
+    value instanceof Error ||
+    value instanceof Promise ||
+    value instanceof ArrayBuffer ||
+    value instanceof DataView ||
+    value instanceof WeakMap ||
+    value instanceof WeakSet
+  ) {
+    return true;
+  }
+
+  // Includes Uint8Array, Float32Array, etc.
+  if (ArrayBuffer.isView(value)) {
+    return true;
+  }
+
+  return false;
 }

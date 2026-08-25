@@ -105,13 +105,13 @@ export async function selectTutorials(ctrl: GenshinControl,
     return {};
   }
 
-  let tutorials: TutorialExcelConfigData[] = await ctrl.readDataFile('./ExcelBinOutput/TutorialExcelConfigData.json');
-  let tutorialDetails: TutorialDetailExcelConfigData[] = await ctrl.readDataFile('./ExcelBinOutput/TutorialDetailExcelConfigData.json');
+  let tutorials: TutorialExcelConfigData[] = await ctrl.readExcelDataFile('./TutorialExcelConfigData.json');
+  let tutorialDetails: TutorialDetailExcelConfigData[] = await ctrl.readExcelDataFile('./TutorialDetailExcelConfigData.json');
 
-  let pushTips: PushTipsConfigData[] = await ctrl.readDataFile('./ExcelBinOutput/PushTipsConfigData.json');
-  let pushTipsCodex: PushTipsCodexExcelConfigData[] = await ctrl.readDataFile('./ExcelBinOutput/PushTipsCodexExcelConfigData.json');
+  let pushTips: PushTipsConfigData[] = await ctrl.readExcelDataFile('./PushTipsConfigData.json');
+  let pushTipsCodex: PushTipsCodexExcelConfigData[] = await ctrl.readExcelDataFile('./PushTipsCodexExcelConfigData.json');
 
-  let eventPushTips: NewActivityPushTipsConfigData[] = await ctrl.readDataFile('./ExcelBinOutput/NewActivityPushTipsConfigData.json');
+  let eventPushTips: NewActivityPushTipsConfigData[] = await ctrl.readExcelDataFile('./NewActivityPushTipsConfigData.json');
 
   for (let pushTip of pushTips) {
     pushTip.Codex = pushTipsCodex.find(c => c.PushTipId === pushTip.PushTipsId);

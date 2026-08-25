@@ -2,21 +2,22 @@
   <section class="card">
     <h2>All Reminder Dialogue</h2>
     <div class="tab-list" role="tablist">
-      <button id="tab-landing" class="tab active" ui-action="tab: #tabpanel-landing, reminderGroups">Landing</button>
-      <button :id="`tab-${group.id}`" class="tab" v-for="group of reminderGroups"
-              :ui-action="`tab: #tabpanel-${group.id}, reminderGroups`">{{ group.title }}</button>
+      <a href="/genshin/reminders/all" class="tab"
+              :class="{active: !version}">Landing</a>
+      <a href="/genshin/reminders/all/unknown">Unknown Version ({{ unknownCount }})</a>
+      <a :href="`/genshin/reminders/all/${ver.version.number}`" class="tab" :class="{active: ver.version.number === version?.number}"
+              v-for="ver of versionCounts"><strong>{{ ver.version.number }}</strong> ({{ ver.count }})</a>
     </div>
     <div class="content">
       <div class="dialogue-container">
-        <div class="tabpanel active" id="tabpanel-landing" role="tabpanel" aria-labelledby="tab-landing">
+        <div v-if="!version" class="tabpanel active" role="tabpanel">
           <p>Select a tab.</p>
         </div>
-        <div v-for="group of reminderGroups" :id="`tabpanel-${group.id}`" role="tabpanel" :aria-labelledby="`tab-${group.id}`"
-             class="tabpanel hide">
-          <template v-for="section of group.children">
-            <dialogue-section :section="section" />
-          </template>
-        </div>
+        <template v-else>
+          <div v-for="group of reminderGroups" role="tabpanel" class="tabpanel">
+            <dialogue-section :section="group" />
+          </div>
+        </template>
       </div>
     </div>
   </section>
@@ -25,9 +26,15 @@
 <script setup lang="ts">
 import DialogueSection from '../../utility/DialogueSection.vue';
 import { DialogueSectionResult } from '../../../util/dialogueSectionResult.ts';
+import { GameVersion } from '../../../../shared/types/game-versions.ts';
+import { toHtmlId } from '../../../../shared/util/stringUtil.ts';
+import { ReminderExcelByVersionCounts } from '../../../../shared/types/genshin/dialogue-types.ts';
 
 const { reminderGroups } = defineProps<{
-  reminderGroups?: DialogueSectionResult[]
+  version?: GameVersion,
+  reminderGroups?: DialogueSectionResult[],
+  versionCounts: ReminderExcelByVersionCounts,
+  unknownCount: number,
 }>()
 </script>
 

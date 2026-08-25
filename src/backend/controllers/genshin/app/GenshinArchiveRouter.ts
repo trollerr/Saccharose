@@ -761,7 +761,7 @@ export default async function(): Promise<Router> {
   router.get('/enemies', async (req: Request, res: Response) => {
     const ctrl = getGenshinControl(req);
     const title = (await ctrl.manualtm.selectRecord('UI_CODEX_ANIMAL_MONSTER')).TextMapContentText;
-    const archive = await ctrl.selectLivingBeingArchive();
+    const archive = await ctrl.lb.selectLivingBeingArchive();
 
     await res.renderComponent(GenshinLbListingPage, {
       title,
@@ -773,7 +773,7 @@ export default async function(): Promise<Router> {
   router.get('/wildlife', async (req: Request, res: Response) => {
     const ctrl = getGenshinControl(req);
     const title = (await ctrl.manualtm.selectRecord('UI_CODEX_ANIMAL_ANIMAL')).TextMapContentText;
-    const archive = await ctrl.selectLivingBeingArchive();
+    const archive = await ctrl.lb.selectLivingBeingArchive();
 
     await res.renderComponent(GenshinLbListingPage, {
       title,
@@ -784,7 +784,7 @@ export default async function(): Promise<Router> {
 
   router.get('/enemies/non-codex', async (req: Request, res: Response) => {
     const ctrl = getGenshinControl(req);
-    const archive = await ctrl.selectLivingBeingArchive();
+    const archive = await ctrl.lb.selectLivingBeingArchive();
 
     await res.renderComponent(GenshinLbListingPage, {
       title: 'Non-Codex Living Beings',
@@ -796,9 +796,10 @@ export default async function(): Promise<Router> {
 
   router.get('/enemies/:id', async (req: Request, res: Response) => {
     const ctrl = getGenshinControl(req);
-    let monster = await ctrl.selectMonsterById(toInt(req.params.id), {
+    let monster = await ctrl.lb.selectMonsterById(toInt(req.params.id), {
       LoadHomeWorldAnimal: true,
       LoadModelArtPath: true,
+      LoadAltDescTextQuestConds: true,
     });
 
     if (monster && monster.AnimalDescribe) {
@@ -814,9 +815,10 @@ export default async function(): Promise<Router> {
 
   router.get('/wildlife/:id', async (req: Request, res: Response) => {
     const ctrl = getGenshinControl(req);
-    let monster = await ctrl.selectMonsterById(toInt(req.params.id), {
+    let monster = await ctrl.lb.selectMonsterById(toInt(req.params.id), {
       LoadHomeWorldAnimal: true,
       LoadModelArtPath: true,
+      LoadAltDescTextQuestConds: true,
     });
 
     if (monster && !monster.AnimalDescribe) {

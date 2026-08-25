@@ -4,7 +4,7 @@ import { DialogueSectionResult } from '../../../util/dialogueSectionResult.ts';
 
 export async function generateGCGTutorialDialogue(ctrl: GenshinControl): Promise<DialogueSectionResult> {
   return ctrl.cached('GCG:TutorialText:' + ctrl.outputLangCode, 'memory', async () => {
-    let json: GCGTutorialTextExcelConfigData[] = await ctrl.readDataFile('./ExcelBinOutput/GCGTutorialTextExcelConfigData.json');
+    let json: GCGTutorialTextExcelConfigData[] = await ctrl.readExcelDataFile('./GCGTutorialTextExcelConfigData.json');
 
     let sect = new DialogueSectionResult(null, 'TCG Tutorial Text');
     sect.showGutter = true;
