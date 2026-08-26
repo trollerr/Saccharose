@@ -427,7 +427,7 @@ export abstract class AbstractControl<T extends AbstractControlState = AbstractC
   }
 
   async normalizeAndCommonLoad(json: any | any[], schemaTable: string | SchemaTable, doNormText: boolean = false) {
-    json = this.normalize(json, schemaTable);
+    json = await this.normalize(json, schemaTable);
     if (Array.isArray(json)) {
       json = await this.commonLoad(json, null, doNormText);
     } else {
