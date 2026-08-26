@@ -269,7 +269,7 @@ export const StarRailVersions: GameVersions = new GameVersions([
   new GameVersion({number: '2.6', prevNumber: '2.5', showTextmapChangelog: true, showNewMedia: true}),
   new GameVersion({number: '2.7', prevNumber: '2.6', showTextmapChangelog: true, showNewMedia: true}),
   new GameVersion({number: '3.0', prevNumber: '2.7', showTextmapChangelog: true, showNewMedia: true}),
-  new GameVersion({number: '3.1', prevNumber: '3.0', showTextmapChangelog: false, showNewMedia: true, noPriorChangelog: true}),
+  new GameVersion({number: '3.1', prevNumber: '3.0', showTextmapChangelog: true, showNewMedia: true}),
   new GameVersion({number: '3.2', prevNumber: '3.1', showTextmapChangelog: true, showNewMedia: true}),
   new GameVersion({number: '3.3', prevNumber: '3.2', showTextmapChangelog: true, showNewMedia: true}),
   new GameVersion({number: '3.4', prevNumber: '3.3', showTextmapChangelog: true, showNewMedia: true}),
