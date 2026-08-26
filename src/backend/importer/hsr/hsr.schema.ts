@@ -67,6 +67,38 @@ export const starRailSchema = {
       'AvatarCutinImgPath': 'CutinImgPath',
     }
   },
+  AvatarConfigLD: <SchemaTable> {
+    name: 'AvatarConfigLD',
+    jsonFile: './ExcelOutput/AvatarConfigLD.json',
+    columns: [
+      {name: 'Id', type: 'integer', isPrimary: true},
+      {name: 'BaseType', type: 'text', isIndex: true},
+      {name: 'DamageType', type: 'text', isIndex: true},
+      {name: 'NameTextMapHash', type: 'text', isIndex: true},
+      {name: 'FullNameTextMapHash', type: 'text', isIndex: true},
+      {name: 'CutinIntroTextMapHash', type: 'text', isIndex: true},
+    ],
+    renameFields: {
+      'AvatarId': 'Id',
+      'AvatarBaseType': 'BaseType',
+      'AvatarVOTag': 'VOTag',
+      'AvatarNameTextMapHash': 'NameTextMapHash',
+      'AvatarDescTextMapHash': 'DescTextMapHash',
+      'AvatarFullNameTextMapHash': 'FullNameTextMapHash',
+      'AvatarCutinIntroTextMapHash': 'CutinIntroTextMapHash',
+
+      'ActionAvatarHeadIconPath': 'ActionHeadIconPath',
+      'AvatarMiniIconPath': 'MiniIconPath',
+      'AvatarSideIconPath': 'SideIconPath',
+      'DefaultAvatarHeadIconPath': 'DefaultHeadIconPath',
+      'SideAvatarHeadIconPath': 'SideHeadIconPath',
+      'WaitingAvatarHeadIconPath': 'WaitingHeadIconPath',
+      'AvatarGachaResultImgPath': 'GachaResultImgPath',
+      'AvatarCutinBgImgPath': 'CutinBgImgPath',
+      'AvatarCutinFrontImgPath': 'CutinFrontImgPath',
+      'AvatarCutinImgPath': 'CutinImgPath',
+    }
+  },
   AvatarBaseType: <SchemaTable> {
     name: 'AvatarBaseType',
     jsonFile: './ExcelOutput/AvatarBaseType.json',

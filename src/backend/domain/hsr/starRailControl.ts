@@ -172,8 +172,12 @@ export class StarRailControl extends AbstractControl<StarRailControlState> {
   }
 
   async selectAllAvatars(): Promise<AvatarConfig[]> {
-    return await this.knex.select('*').from('AvatarConfig')
-      .then(this.commonLoad)
+    const [avatarsNormal, avatarsLD] = await Promise.all([
+      this.knex.select('*').from('AvatarConfig'),
+      this.knex.select('*').from('AvatarConfigLD')
+    ]);
+    const avatars: AvatarConfig[] = [...avatarsNormal, ...avatarsLD];
+    return this.commonLoad(avatars)
       .then((avatars: AvatarConfig[]) => avatars.asyncMap(a => this.postProcessAvatar(a)));
   }
 
@@ -183,7 +187,9 @@ export class StarRailControl extends AbstractControl<StarRailControlState> {
     }
     let avatar: AvatarConfig = await this.knex.select('*').from('AvatarConfig')
       .where({Id: id}).first().then(this.commonLoadFirst);
-    avatar = await this.postProcessAvatar(avatar);
+    let avatarLD: AvatarConfig = await this.knex.select('*').from('AvatarConfigLD')
+      .where({Id: id}).first().then(this.commonLoadFirst);
+    avatar = await this.postProcessAvatar(avatar || avatarLD);
     if (!this.state.DisableAvatarCache) {
       this.state.avatarCache[id] = avatar;
     }
