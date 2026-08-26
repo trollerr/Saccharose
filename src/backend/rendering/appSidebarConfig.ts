@@ -211,7 +211,7 @@ export const SIDEBAR_CONFIG: { [siteMode: string]: SiteSidebar } = {
             id: 'media-data',
             name: 'Media Data',
             items: [
-              { id: 'media', name: 'Media', link: '/hsr/media', bodyClass: 'page--media' },
+              { id: 'media', name: 'Media', link: '/hsr/media', bodyClass: 'page--media', rightSideButton: { name: 'Search', link: '/hsr/media/search' } },
             ]
           },
           {
@@ -330,7 +330,7 @@ export const SIDEBAR_CONFIG: { [siteMode: string]: SiteSidebar } = {
             id: 'media-data',
             name: 'Media Data',
             items: [
-              { id: 'media', name: 'Media', link: '/wuwa/media', bodyClass: 'page--media' },
+              { id: 'media', name: 'Media', link: '/wuwa/media', bodyClass: 'page--media', rightSideButton: { name: 'Search', link: '/wuwa/media/search' } },
             ]
           },
           {
