@@ -23,7 +23,7 @@ export async function sendExcelViewerTableResponse(ctrl: AbstractControl, req: R
   }
 
   await res.renderComponent(ExcelViewerTablePage, {
-    title: 'Excel Viewer',
+    title: targetExcelName + ' - Excel Viewer',
     bodyClass: ['page--excel-viewer', 'page--wide', 'page--narrow-sidebar'],
     fileName: targetExcelName,
     fileSize: foundTarget?.size,
