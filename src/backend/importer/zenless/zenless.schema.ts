@@ -128,7 +128,7 @@ export const zenlessSchema = {
 
   GlossaryTerms: <SchemaTable> {
     name: 'GlossaryTerms',
-    jsonFile: './FileCfg/3541280622646752426.json',
+    jsonFile: './FileCfg/NounPromptsTemplateTb.json',
     columns: [
       { name: 'TermId', type: 'text', isPrimary: true, resolveByValueExample: 1000033, resolveByValueExampleGroup: 1 },
       { name: 'TermKey', type: 'text', resolveByValueExample: 'Remielle_NounPrompts_04', resolveByValueExampleGroup: 1 },
